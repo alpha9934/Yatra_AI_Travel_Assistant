@@ -1,0 +1,45 @@
+# ── Stage 1: Dependencies ─────────────────────────────────────
+FROM node:20-slim AS deps
+
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# ── Stage 2: Builder ──────────────────────────────────────────
+FROM node:20-slim AS builder
+
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Backend URL must be set at build time for Next.js
+ARG NEXT_PUBLIC_API_URL=https://roger101-yatra-ai-backend.hf.space
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+RUN npm run build
+
+# ── Stage 3: Runtime ──────────────────────────────────────────
+FROM node:20-slim AS runtime
+
+# Security: non-root user
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=7860
+
+# Copy only what's needed to run
+COPY --from=builder --chown=appuser:appgroup /app/public ./public
+COPY --from=builder --chown=appuser:appgroup /app/.next/standalone ./
+COPY --from=builder --chown=appuser:appgroup /app/.next/static ./.next/static
+
+USER appuser
+
+EXPOSE 7860
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:7860 || exit 1
+
+CMD ["node", "server.js"]

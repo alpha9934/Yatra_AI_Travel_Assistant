@@ -1,0 +1,24 @@
+# Core
+fastapi==0.115.5
+uvicorn==0.30.6
+python-multipart==0.0.18
+pydantic==2.11.1
+python-dotenv==1.0.1
+
+# OpenAI
+openai==1.82.0
+
+# HTTP client — pinned to satisfy both openai and supabase
+httpx==0.27.2
+
+# Supabase (PostgreSQL persistence)
+supabase==2.10.0
+postgrest==0.17.0
+storage3==0.7.7
+supafunc==0.5.3
+
+# Pinecone (vector DB for RAG)
+pinecone==5.4.2
+
+# Resilience
+tenacity==9.0.0
